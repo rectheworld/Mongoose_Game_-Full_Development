@@ -1,0 +1,166 @@
+#All that is needed for the snake is:
+################################################################
+import Snake_Class
+import Vector_Class
+
+#then in the game setup:
+#############################################################
+
+A = [350, 350] # Start Point
+B = [370, 370] # Control point
+C = [390, 390] # Endpoint
+D = [410, 410] # Control point 
+E = [430, 430]
+F = [450, 450] # Control Point 
+G = [470, 470]
+
+DK_BROWN = (116, 71, 48)
+"""
+The Snkae Agent is Created below
+The Starting Point is given by the Body point A ( Which is divided by 25 to convert it to grid terms)
+"""
+snake_agent = pathfinder.newAgent([A[0]/25, A[1]/25], goal_grid)
+snake_path = snake_agent.getPath(board)
+
+
+"""
+Below the snake is initilized with the body points, A, B, C, D,E,F,G
+
+The snake's scrren, goalm and State are also inilized below
+"""
+snake = Snake_Class.Snake(A, B, C, D, E, F, G)
+snake.screen = screen
+snake.goal = goal
+snake.goal_list.append(snake.goal)
+snake.FSM.SetState("Traveling")
+
+point_x_speed = 0
+point_y_speed = 0 
+
+index = 1 # Used to access item in the snake_path list 
+
+#a handfull of functions:
+###################################################################
+
+
+def update(point, goal):
+    """
+    This functon takes in two parameters, each of which is a two tuple
+    list representing a point on the screen.
+
+    The function returns the direction the point needs to move in in
+    order to be closer to the gaol.
+
+    The direction is returned as a point_x_speed, and a point_y_speed
+    """
+
+
+    point_x_speed = 0
+    point_y_speed = 0
+    if (point[0] < goal[0]) and (point[1] < goal[1]):
+        point_x_speed += 25
+        point_y_speed += 25
+    elif (point[0] < goal[0]) and (point[1] > goal[1]):
+        point_x_speed += 25
+        point_y_speed -= 25
+    elif (point[0] > goal[0]) and (point[1] > goal[1]):
+        point_x_speed -= 25
+        point_y_speed -= 25
+    elif point[0] > goal[0] and point[1] < goal[1]:
+        point_x_speed -= 25
+        point_y_speed += 25
+    elif point[0] < goal[0]:
+        point_x_speed += 25
+    elif point[0] > goal[0]:
+        point_x_speed -= 25
+    elif point[1] < goal[1]:
+        point_y_speed += 25
+    elif point[1] > goal[1]:
+        point_y_speed -= 25
+
+    return [point_x_speed, point_y_speed]
+
+
+def distance(point1,point2):
+    """
+    Returns the distance between two points.
+
+    """
+    distance = math.sqrt((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2)
+    return distance
+
+class Timer():
+    def __init__(self):
+        self.last = pygame.time.get_ticks()
+       
+
+    def delta_time_Attack(self, delay):
+        now = pygame.time.get_ticks()
+        if now - self.last >= delay:
+            self.last = now
+            return True
+        else:
+            return False
+
+
+timer = Timer()
+
+
+
+#Then in the Main Game Loop
+#################################################################
+
+"""
+The if Statment below will mensure the distance between A and the goal and set the X-speed and 
+Y- speed acordanly. 
+
+Next it will take the next item in the snake's A-Star path and multiply each element by 25 to 
+convert the element to a pixal on the screen. 
+
+finally the index in incremented 
+"""
+if distance(snake.A, goal)>= 100:
+	if index <= len(snake_path):
+		snake.point_x_speed = update(snake.A, goal)[0]
+		snake.point_y_speed = update(snake.A, goal)[1]
+		snake.A = [snake_path[index - 1][0] * 25, snake_path[index - 1][1] * 25]	
+		index +=1
+
+#transition triggers
+if distance(snake.A, ((goal[0]), (goal[1]))) < 150:
+	"""
+	if the snake is not already in Offense State, switch to an offensive State
+	"""
+	if snake.FSM.cur_state_name != "Offense": 
+		snake.FSM.Transition("To_Offense")
+		snake.FSM.Traveling = False 
+		snake.FSM.Attack = False
+		print "Nag is Offensive"
+		
+	
+	
+	
+	if snake.FSM.cur_state_name == "Offense":
+		if timer.delta_time_Attack(8000) == True:
+			snake.FSM.Transition("To_Attack")
+			snake.FSM.Traveling = False
+			snake.FSM.Attack = False 
+			print "Nag is Attacking!!!!"
+
+	snake.FSM.Execute()
+else: 
+	if snake.FSM.cur_state_name != "Traveling":
+		snake.FSM.Transition("To_Traveling")
+		snake.FSM.Offense = False 
+		snake.FSM.Attack = False
+		snake_agent.start = [snake.A[0]/25, snake.A[1]/25]
+		snake_agent.goal = goal_grid
+		snake_path = snake_agent.getPath(board)
+		index = 1
+		print "Nag is Traveling"
+		snake.FSM.Execute()
+
+
+
+
+
